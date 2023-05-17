@@ -1,13 +1,17 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
   import { browser } from '$app/environment';
+  import ToDo from '../lib/components/ToDo.svelte';
 
   let todoText = '';
   let todos = [];
+  let test;
   let hasError = false;
   let numberOfTodos = 0;
-  let deletedTodos = [];
-  let showDeletedTodos = false;
+  // let deletedTodos = [];
+  // let showDeletedTodos = false;
+  // let selectedTags = [];
+
 
   onMount(() => {
     if (browser) {
@@ -31,13 +35,16 @@
   }
 
   function addTodo() {
+    todos.push({ text: todoText, done: false });
+    todos = todos;
     if (todoText.trim() === '') {
       hasError = true;
       return;
     }
-    // todos.unshift({ text: todoText, done: false }); // add new todo to the beginning of the array
-    // todos = todos;
-    todos = [{ text: todoText, done: false }, ...todos]; // create a new array reference
+
+    // const todoTags = selectedTags.map(tag => ({ tag, done: false }));
+    
+    // todos = [{ text: todoText, done: false }, ...todos]; // create a new array reference
     todoText = '';
     hasError = false;
     numberOfTodos++; // increase numberOfTodos when a new todo is added
@@ -46,47 +53,63 @@
     saveTodos();
   }
 
-  function remove(index) {
-    // delete entry
-    const deletedTodo = todos.splice(index, 1)[0];
-    deletedTodos.unshift(deletedTodo); 
-    // todos = todos;
-    todos = [...todos]; // create a new array reference
-    numberOfTodos--; // decrease numberOfTodos when a todo is removed
+  function remove(event) {
+    //delete entry
+    let index = event.detail;
+    console.log(index);
+    todos.splice(index,1);
+    todos = todos;
     saveTodos();
   }
-  
-  function restoreDeleted(index) {
-  if (index >= 0 && index < deletedTodos.length) {
-    const restoredTodo = deletedTodos.splice(index, 1)[0];
-    if (!restoredTodo.hasOwnProperty('done')) {
-      restoredTodo.done = false;
-    }
-    todos = [restoredTodo, ...todos];
-    numberOfTodos++;
-    saveTodos();
 
-    if (deletedTodos.length === 0) {
-      showDeletedTodos = false;
-    }
-  }
-  showDeletedTodos = false; // Schließe den "Deleted Todos"-Bereich nach der Wiederherstellung
-}
+  //Remove
+  // function remove(index) {
+  //   // delete entry
+  //   const deletedTodo = todos.splice(index, 1)[0];
+  //   deletedTodos.unshift(deletedTodo); 
+  //   // todos = todos;
+  //   todos = [...todos]; // create a new array reference
+  //   numberOfTodos--; // decrease numberOfTodos when a todo is removed
+  //   saveTodos();
+  // }
 
 
+  //Restore
+//   function restoreDeleted(index) {
+//   if (index >= 0 && index < deletedTodos.length) {
+//     const restoredTodo = deletedTodos.splice(index, 1)[0];
+//     if (!restoredTodo.hasOwnProperty('done')) {
+//       restoredTodo.done = false;
+//     }
+//     todos = [restoredTodo, ...todos];
+//     numberOfTodos++;
+//     saveTodos();
 
+//     if (deletedTodos.length === 0) {
+//       showDeletedTodos = false;
+//     }
+//   }
+//   showDeletedTodos = false; // Schließe den "Deleted Todos"-Bereich nach der Wiederherstellung
+// }
 
-  function toggleDeletedTodos() {
-  showDeletedTodos = !showDeletedTodos;
-  saveTodos();
-  }
+//   function toggleDeletedTodos() {
+//   showDeletedTodos = !showDeletedTodos;
+//   saveTodos();
+//   }
 
-  function removeAll() {
-  deletedTodos = []; // Leere die deletedTodos-Liste
-  saveTodos();
-}
+//   function removeAll() {
+//   deletedTodos = []; // Leere die deletedTodos-Liste
+//   saveTodos();
+// }
 
-
+// function addTag() {
+//     const tag = 'privat';
+//     if (selectedTags.includes(tag)) {
+//       selectedTags = selectedTags.filter(t => t !== tag);
+//     } else {
+//       selectedTags = [tag];
+//     }
+//   }
 
 </script>
 
@@ -101,8 +124,17 @@
 <div class="input-container">
 
 <!-- textfeld -->
-    <input type="text" class="todo-input" bind:value={todoText} class:error={hasError} placeholder="Note a todo..." on:focus={() => todoText = ''}/>
+    <!-- <input type="text" class="todo-input" bind:value={todoText} class:error={hasError} placeholder="Note a todo..." on:focus={() => todoText = ''}/> -->
 
+<!-- tags -->
+    <!-- <input type="text" bind:value={tagText} placeholder="Enter tags..." /> -->
+
+<!-- button tag add -->
+    <!-- <button on:click={addTag} class="add-tag-button">
+      Add Tag
+    </button> -->
+
+    <input type="text" class="todo-input" bind:value={todoText} />
 
 <!-- button add -->
   <button on:click={addTodo} class="add-button">
@@ -110,9 +142,9 @@
   </button>
 
 <!-- button show deleted todos -->
-<button on:click={toggleDeletedTodos} class="restore-button" style="border: 1px solid blue; border-radius: 30px;">
+<!-- <button on:click={toggleDeletedTodos} class="restore-button" style="border: 1px solid blue; border-radius: 30px;">
   <span class="material-symbols-outlined" style="color: blue;">delete</span>
-</button>
+</button> -->
 
 
 </div>
@@ -123,59 +155,30 @@
 {/if}
 
 {#each todos as todo, index}
+<ToDo todoData={todo} bind:testProp={test} index={index} on:removeEvent={remove} />
 <!-- todo -->
-  <div class="todo-entry" class:done={todo.done}>
-
-<!-- checkboxen -->
-<div class="todo-checkbox-container">
-  {#if todo.done}
-    <input type="checkbox" bind:checked={todo.done} id="todo-{index}" class="todo-checkbox" />
-  {:else}
-    <input type="checkbox" bind:checked={todo.done} id="todo-{index}" class="todo-label" style="border: none; width: 13px; height: 13px; border-radius: 50%; margin-right: 0.5em; margin-top: 0.4em;color:lightgrey;"/>
-  {/if}
-    <label for="todo-{index}" class="todo-label">
-    {#if todo.done}
-      <span class="material-symbols-outlined" style="color: blue;">check</span>
-    {/if}
-  </label>
-</div>
-
-<!-- text -->
-<div 
-  style="font-family: SF Pro Text, sans-serif; font-size: 1em; margin-top: 0.2em"
-  class:done={todo.done}
->{todo.text}</div>
-
-<!-- löschen -->
-<button
-  class="delete"
-  on:click={() => {
-    remove(index);
-  }}
-  ><span class="material-symbols-outlined" style="color: lightgrey;">cancel</span>
-</button>
-</div>
+  
 {/each}
 
 
-{#if showDeletedTodos}
+<!-- {#if showDeletedTodos}
 <div class="deleted-todos">
   <div class="remove-all-deleted-todos">
-<h3>Deleted Todos</h3>
+<h3>Deleted Todos</h3> -->
   <!-- button remote all -->
-  <button on:click={removeAll} class="remote-all-button">
+  <!-- <button on:click={removeAll} class="remote-all-button">
     Remote All
 </button>
-</div>
+</div> -->
 
-  {#if deletedTodos.length > 0}
+  <!-- {#if deletedTodos.length > 0}
     {#each deletedTodos as todo, index}
-      <div class="todo-entry" class:done={todo.done}>
+      <div class="todo-entry" class:done={todo.done}> -->
         <!-- text -->
-        <div style="font-family: SF Pro Text, sans-serif; font-size: 1em; margin-top: 0.2em; color: black;" class:done={todo.done}>{todo.text}</div>
+        <!-- <div style="font-family: SF Pro Text, sans-serif; font-size: 1em; margin-top: 0.2em; color: black;" class:done={todo.done}>{todo.text}</div> -->
 
         <!-- wiederherstellen -->
-        <button class="restore" on:click={() => restoreDeleted(index)}>
+        <!-- <button class="restore" on:click={() => restoreDeleted(index)}>
           <span class="material-symbols-outlined" style="color: blue;">undo</span>
         </button>
 
@@ -185,8 +188,8 @@
     <p>No deleted todos.</p>
   {/if}
 </div>
-{/if}
-</div>
+{/if}-->
+</div> 
 
 <style>
 h1 {
@@ -197,13 +200,13 @@ color: black;
 margin-bottom: 0.5em;
 }
 
-h3 {
+/* h3 {
     font-family: 'SF Pro Text', sans-serif;
     font-weight: 600;
     font-size: 1em;
     color: black;
     margin-bottom: 2em;
-}
+} */
 
 p {
 font-family: 'SF Pro Text', sans-serif;
@@ -244,7 +247,7 @@ margin-bottom: 2em;
   align-items: center;
   margin-right: 0.5em;
 }
-
+/* 
 .remove-all-deleted-todos{
   display: flex;
    align-items: center;
@@ -290,7 +293,7 @@ margin-bottom: 2em;
 .restore-button:hover {
   color: blue;
   font-weight: 700;
-}
+} */
 
 .material-symbols-outlined {
   color: white;
@@ -301,7 +304,7 @@ margin-bottom: 2em;
   'opsz' 48
 }
 
-
+/* 
 .delete {
   background-color: white;
   border: none;
@@ -325,20 +328,8 @@ font-weight: 700;
   padding: 1em;
   left: 19.3em;
   top: 12em
-} 
+}  */
 
-.done {
-color: lightgrey;
-}
-
-.todo-entry {
-display: flex;
-margin-bottom: 1em;
-}
-
-.todo-entry:not(.done) div {
-color: black;      
-}
 
 .error-message {
 color: red;
@@ -347,10 +338,10 @@ margin-bottom: 10px;
 font-size: 0.8em;
 }
 
-.error {
+/* .error {
 border: 1px solid red;
 border-radius: 15px;
-}
+} */
 
 .todo-input::placeholder {
 color: lightgrey;
@@ -359,27 +350,6 @@ font-size: 1em;
 
 .todo-input:focus {
   border: 1px solid gray;
-}
-
-.todo-checkbox {
-  display: none;
-  position: relative;
-  width: 1.2em;
-  height: 1.2em;
-  border: 1px solid lightgray; /* 1px Outline-Stärke */
-  border-radius: 50%; /* Kreisförmige Darstellung */
-}
-.todo-checkbox-container{
-  display: flex;
-  margin-right: 1em;
-}
-
-.todo-label:before {
-  position: relative;
-  width: 1.2em;
-  height: 1.2em;
-  border: 1px solid lightgray; /* 1px Outline-Stärke */
-  border-radius: 50%; /* Kreisförmige Darstellung */
 }
 
 .todo-list{
